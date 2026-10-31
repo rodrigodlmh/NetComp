@@ -1,7 +1,6 @@
 #include "raw_assets/tsv.h"
 
 #include <fstream>
-#include <iostream>
 
 bool IsBlankLine(const std::string_view line)
 {
@@ -38,7 +37,7 @@ RawTsv ReadTsv(const std::filesystem::path& path)
     result.source = path;
     bool isHeader = true;
 
-    uint32_t lineNo = 0;
+    int32_t lineNo = 0;
     size_t pos = 0;
     while (pos < text.size())
     {

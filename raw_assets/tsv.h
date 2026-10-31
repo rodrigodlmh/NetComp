@@ -9,7 +9,7 @@
 
 struct RawTsvRow
 {
-    uint32_t line;
+    int32_t line;
     std::vector<std::string> cells;
 };
 

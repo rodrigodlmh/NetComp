@@ -53,6 +53,7 @@ add_executable(NetComp
         main.cpp
         raw_assets/tsv.cpp
         gb_packers/lang.cpp
+        raw_assets/glsl.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)

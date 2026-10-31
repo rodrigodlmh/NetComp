@@ -1,8 +1,12 @@
 #include "gb_packers/lang.h"
 
 #include <unordered_set>
+#include <fstream>
+
+#include "utf8.h"
 
 #include "util/hash.h"
+#include "util/magic.h"
 
 bool CheckTsvCorrectness(const RawTsv& tsv, Diagnostics& diagnostics)
 {
@@ -15,7 +19,7 @@ bool CheckTsvCorrectness(const RawTsv& tsv, Diagnostics& diagnostics)
     if (tsv.headers.empty())
     {
         diagnostics.Error(tsv.source, "Missing headers");
-        valid = false;
+        return false; // To avoid reading headers[0] later
     }
     if (tsv.headers[0] != "key")
     {
@@ -119,21 +123,22 @@ LangData GetLang(const std::vector<RawTsv>& tsvFiles, const LangKeys& keys, cons
         if (!CheckTsvCorrectness(tsv, diagnostics)) continue;
 
         // Find language column
-        size_t langIndex = 0;
+        size_t langIndex = tsv.headers.size();
         for (size_t i = 0; i < tsv.headers.size(); ++i)
         {
-            if (tsv.headers[i] == langName) langIndex = i;
-            break;
+            if (tsv.headers[i] == langName)
+            {
+                langIndex = i;
+                break;
+            }
         }
 
         // This TSV doesn't contain this language.
         if (langIndex == tsv.headers.size()) continue;
-
-
+        
         for (const auto& row : tsv.rows)
         {
             if (row.cells.empty() || row.cells[0].empty()) continue;
-            lang.entries.push_back(row.cells[langIndex]);
 
             const auto& key = row.cells[0];
             const uint64_t hash = HashStr(key);
@@ -153,4 +158,80 @@ LangData GetLang(const std::vector<RawTsv>& tsvFiles, const LangKeys& keys, cons
     }
 
     return lang;
+}
+
+void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnostics& diagnostics)
+{
+    if (!std::filesystem::is_directory(path))
+    {
+        diagnostics.Error(path, "Provided path for saving is not a directory");
+        return;
+    }
+
+    const auto savePath = path / ("lang_" + data.name + ".pak");
+
+    constexpr size_t maxStringSize = std::numeric_limits<uint16_t>::max();
+
+    std::vector<uint8_t> blob;
+    std::vector<LangPakString> strings;
+    strings.reserve(data.entries.size());
+
+    for (const auto& string : data.entries)
+    {
+        if (string.size() > maxStringSize)
+        {
+            diagnostics.Error(data.name, "Translation exceeds maximum size of 65535 bytes");
+
+            const auto offset = static_cast<uint32_t>(blob.size());
+            strings.push_back({ offset, 0, 0 });
+            blob.push_back('\0');
+            continue;
+        }
+
+        const size_t codepointCount = utf8::distance(string.begin(), string.end());
+
+        if (codepointCount > std::numeric_limits<uint16_t>::max())
+        {
+            diagnostics.Error(data.name, "Translation exceeds maximum codepoint count");
+
+            const auto offset = static_cast<uint32_t>(blob.size());
+            strings.push_back({ offset, 0, 0 });
+            blob.push_back('\0');
+            continue;
+        }
+
+        const auto offset = static_cast<uint32_t>(blob.size());
+        const auto byteCount = static_cast<uint16_t>(string.size());
+        const auto glyphCount = static_cast<uint16_t>(codepointCount);
+
+        strings.push_back({ offset, glyphCount, byteCount });
+
+        blob.insert(blob.end(), string.begin(), string.end());
+        blob.push_back('\0');
+    }
+
+    if (strings.empty() || blob.empty())
+    {
+        diagnostics.Error(data.name, "Skipped empty language file");
+    }
+
+    LangPakHeader header{};
+    header.magic = MakeMagic('L', 'P', 'A', 'K');
+    header.version = 1;
+    header.stringCount = static_cast<uint32_t>(strings.size());
+    header.blobSize = static_cast<uint32_t>(blob.size());
+
+    std::ofstream outFile(savePath, std::ios::binary);
+    if (!outFile)
+    {
+        diagnostics.Error(savePath, "Failed to open file for writing");
+        return;
+    }
+    outFile.write(reinterpret_cast<const char*>(&header), sizeof(LangPakHeader));
+    outFile.write(reinterpret_cast<const char*>(strings.data()), static_cast<std::streamsize>(strings.size() * sizeof(LangPakString)));
+    outFile.write(reinterpret_cast<const char*>(blob.data()), static_cast<std::streamsize>(blob.size()));
+    if (!outFile)
+    {
+        diagnostics.Error(savePath, "Failed to write language file");
+    }
 }

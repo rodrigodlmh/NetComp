@@ -11,9 +11,16 @@ struct Diagnostics
 {
     std::vector<std::string> errors;
 
-    void Error(const std::filesystem::path& file, const std::string& msg, const uint32_t line = 0)
+    void Error(const std::filesystem::path& file, const std::string& msg, const int32_t line = -1)
     {
-        errors.push_back(file.string() + ":" + std::to_string(line) + ": " + msg);
+        if (line >= 0)
+        {
+            errors.push_back(file.string() + ":" + std::to_string(line) + ": " + msg);
+        }
+        else
+        {
+            errors.push_back(file.string() + ": " + msg);
+        }
     }
     [[nodiscard]] bool Ok() const { return errors.empty(); }
 };

@@ -22,10 +22,16 @@ int main()
     Diagnostics diagnostics;
     LangKeys keys = GetLangKeys(tsv, diagnostics);
     LangNames languages = GetLangNames(tsv, diagnostics);
+
+    std::filesystem::path outPath = path / "out";
+    for (const auto& lang : languages.names)
+    {
+        LangData data = GetLang(tsv, keys, lang, diagnostics);
+        SaveLang(data, outPath, diagnostics);
+    }
     for (const auto& error : diagnostics.errors)
     {
         std::cout << error << std::endl;
     }
-    std::cin.get();
     return 0;
 }
