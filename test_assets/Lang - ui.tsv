@@ -1,0 +1,43 @@
+key	en_US	es_MX	de_DE
+common.back	Back	Volver	Zurück
+common.auto	Auto	Automático	Automatisch
+			
+menu.singleplayer	Singleplayer	Un jugador	Einzelspieler
+menu.multiplayer	Multiplayer	Multijugador	Mehrspieler
+menu.settings	Settings	Ajustes	Einstellungen
+menu.exit	Exit	Salir	Beenden
+			
+singleplayer.create_world	Create new world	Crear nuevo mundo	Neue Welt erstellen
+world_create.name	World name	Nombre del mundo	Weltname
+world_create.seed	World seed	Semilla del mundo	Welt-Seed
+world_create.difficulty	Difficulty	Dificultad	Schwierigkeit
+world_create.create	Create	Crear	Erstellen
+difficulty.easy	Easy	Fácil	Leicht
+difficulty.medium	Normal	Normal	Normal
+difficulty.hard	Hard	Difícil	Schwer
+difficulty.realistic	Realistic	Realista	Realistisch
+			
+settings.tab.game	Game	Juego	Spiel
+settings.tab.graphics	Graphics	Gráficos	Grafik
+settings.tab.audio	Audio	Sonido	Audio
+game.language	Language	Idioma	Sprache
+game.render_distance	Render distance	Distancia de renderizado	Sichtweite
+graphics.window_mode	Window mode	Modo de ventana	Fenstermodus
+graphics.ui_scale	UI Scale	Tamaño de la interfaz	UI-Skalierung
+audio.master_volume	Master volume	Volumen general	Hauptlautstärke
+audio.music	Music	Música	Musik
+audio.ui	User interface	Interfaz	Benutzeroberfläche
+audio.environment	Environment	Ambiente	Umgebung
+audio.entities	Entities	Entidades	Entitäten
+language.name	English (United States)	Español (México)	Deutsch
+window_mode.fullscreen	Fullscreen	Pantalla completa	Vollbild
+window_mode.windowed	Windowed	Ventana	Fenster
+window_mode.borderless	Borderless	Sin bordes	Rahmenlos
+			
+loading.generating_map	Generating map...	Generando mapa...	Karte wird erstellt...
+loading.preparing_spawn_point	Preparing spawn point...	Preparando punto de aparición...	Spawnpunkt wird vorbereitet...
+loading.ready	Ready!	¡Listo!	Fertig!
+			
+pause.title	Pause Menu	Menú de pausa	Pausenmenü
+pause.resume	Resume Game	Reanudar partida	Spiel fortsetzen
+pause.exit_world	Exit World	Salir del mundo	Welt verlassen

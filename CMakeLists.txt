@@ -13,6 +13,10 @@ set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 
+# nlohmann_json options
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
+
 FetchContent_Declare(
         assimp
         GIT_REPOSITORY https://github.com/assimp/assimp.git
@@ -26,7 +30,17 @@ FetchContent_Declare(
         GIT_TAG        master    # better: pin to a commit hash
 )
 
-FetchContent_MakeAvailable(assimp stb)
+FetchContent_Declare(
+        nlohmann_json
+        URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+)
+
+FetchContent_Declare(
+        utfcpp
+        URL https://github.com/nemtrif/utfcpp/archive/refs/tags/v4.0.6.tar.gz
+)
+
+FetchContent_MakeAvailable(assimp stb nlohmann_json utfcpp)
 
 # stb is header-only
 add_library(stb_image INTERFACE)
@@ -35,10 +49,18 @@ target_include_directories(stb_image INTERFACE ${stb_SOURCE_DIR})
 # shaderc from the Vulkan SDK
 find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
-add_executable(NetComp main.cpp)
+add_executable(NetComp
+        main.cpp
+        raw_assets/tsv.cpp
+        gb_packers/lang.cpp
+)
+
+target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 target_link_libraries(NetComp PRIVATE
         assimp::assimp
         stb_image
+        nlohmann_json::nlohmann_json
+        utf8cpp
         Vulkan::shaderc_combined
 )
