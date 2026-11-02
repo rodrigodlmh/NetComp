@@ -8,7 +8,7 @@
 #include "util/hash.h"
 #include "util/magic.h"
 
-bool CheckTsvCorrectness(const RawTsv& tsv, Diagnostics& diagnostics)
+bool CheckTsvCorrectness(const Tsv& tsv, Diagnostics& diagnostics)
 {
     bool valid = true;
     if (tsv.source.empty())
@@ -34,7 +34,7 @@ bool CheckTsvCorrectness(const RawTsv& tsv, Diagnostics& diagnostics)
     return valid;
 }
 
-LangKeys GetLangKeys(const std::vector<RawTsv>& tsvFiles, Diagnostics& diagnostics)
+LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
 {
     LangKeys keys;
 
@@ -76,7 +76,7 @@ LangKeys GetLangKeys(const std::vector<RawTsv>& tsvFiles, Diagnostics& diagnosti
     return keys;
 }
 
-LangNames GetLangNames(const std::vector<RawTsv>& tsvFiles, Diagnostics& diagnostics)
+LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
 {
     LangNames names;
 
@@ -112,7 +112,7 @@ LangNames GetLangNames(const std::vector<RawTsv>& tsvFiles, Diagnostics& diagnos
     return names;
 }
 
-LangData GetLang(const std::vector<RawTsv>& tsvFiles, const LangKeys& keys, const std::string& langName, Diagnostics& diagnostics)
+LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, Diagnostics& diagnostics)
 {
     LangData lang;
     lang.name = langName;

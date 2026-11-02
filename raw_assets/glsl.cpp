@@ -2,13 +2,7 @@
 
 #include <fstream>
 
-ShaderCompiler::ShaderCompiler()
-{
-    options_.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-    options_.SetOptimizationLevel(shaderc_optimization_level_performance);
-}
-
-RawSpv ShaderCompiler::CompileGlslToSpv(const std::filesystem::path& path) const
+Spv CompileGlslToSpv(const std::filesystem::path& path, const shaderc::Compiler& compiler, const shaderc::CompileOptions& options)
 {
     std::ifstream file(path, std::ios::binary);
     if (!file) return {};
@@ -25,7 +19,7 @@ RawSpv ShaderCompiler::CompileGlslToSpv(const std::filesystem::path& path) const
     source.resize(fileSize);
     if (!file.read(source.data(), static_cast<std::streamsize>(fileSize))) return {};
 
-    const auto result = compiler_.CompileGlslToSpv(source, kind, path.string().c_str(), options_);
+    const auto result = compiler.CompileGlslToSpv(source, kind, path.string().c_str(), options);
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success)
     {
@@ -33,7 +27,7 @@ RawSpv ShaderCompiler::CompileGlslToSpv(const std::filesystem::path& path) const
         return {};
     }
 
-    RawSpv out;
+    Spv out;
     out.data.assign(result.cbegin(), result.cend());
     return out;
 }

@@ -7,23 +7,23 @@
 #include <string>
 #include <vector>
 
-struct RawTsvRow
+struct TsvRow
 {
     int32_t line;
     std::vector<std::string> cells;
 };
 
-struct RawTsv
+struct Tsv
 {
     std::filesystem::path source;
     std::vector<std::string> headers;
-    std::vector<RawTsvRow> rows;
+    std::vector<TsvRow> rows;
 };
 
 bool IsBlankLine(std::string_view line);
 // Given a line of the TSV file, returns a vector of each cell divided by tabs
 std::vector<std::string> SplitTabs(std::string_view line);
 // Reads and parses a TSV file
-RawTsv ReadTsv(const std::filesystem::path& path);
+Tsv ReadTsv(const std::filesystem::path& path);
 
 #endif //NETCOMP_TSV_H

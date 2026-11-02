@@ -8,7 +8,7 @@ int main()
     const std::filesystem::path path = currentPath.parent_path() / "test_assets";
     std::cout << path << std::endl;
 
-    std::vector<RawTsv> tsv;
+    std::vector<Tsv> tsv;
     for (const auto& file : std::filesystem::directory_iterator(path))
     {
         if (file.path().extension() == ".tsv")

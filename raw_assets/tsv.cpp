@@ -25,7 +25,7 @@ std::vector<std::string> SplitTabs(std::string_view line)
     return cells;
 }
 
-RawTsv ReadTsv(const std::filesystem::path& path)
+Tsv ReadTsv(const std::filesystem::path& path)
 {
     std::ifstream f(path, std::ios::binary);
     if (!f) return {};
@@ -33,7 +33,7 @@ RawTsv ReadTsv(const std::filesystem::path& path)
     std::string text((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
     if (text.starts_with("\xEF\xBB\xBF")) text.erase(0, 3); // BOM
 
-    RawTsv result;
+    Tsv result;
     result.source = path;
     bool isHeader = true;
 

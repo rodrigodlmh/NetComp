@@ -8,25 +8,11 @@
 
 #include <shaderc/shaderc.hpp>
 
-struct RawSpv
+struct Spv
 {
     std::vector<uint32_t> data;
 };
 
-class ShaderCompiler
-{
-public:
-
-    ShaderCompiler();
-
-private:
-
-    shaderc::Compiler compiler_;
-    shaderc::CompileOptions options_;
-
-public:
-
-    [[nodiscard]] RawSpv CompileGlslToSpv(const std::filesystem::path& path) const;
-};
+Spv CompileGlslToSpv(const std::filesystem::path& path, const shaderc::Compiler& compiler, const shaderc::CompileOptions& options);
 
 #endif //NETCOMP_GLSL_H
