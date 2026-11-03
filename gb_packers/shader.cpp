@@ -6,7 +6,7 @@
 
 using json = nlohmann::json;
 
-ShaderJson ReadShaderJson(const std::filesystem::path& path, Diagnostics& diagnostics)
+ShaderJson ReadShaderJson(const std::filesystem::path& path, DiagnosticSink& diagnostics)
 {
     std::ifstream file(path);
     if (!file) return {};
@@ -20,10 +20,10 @@ ShaderJson ReadShaderJson(const std::filesystem::path& path, Diagnostics& diagno
     shader.compute = j.at("compute").get<std::string>();
 
     if (shader.name.empty())
-        diagnostics.Error(path, "Shader name is empty");
+        diagnostics.Error("Shader name is empty", path);
     if (shader.compute && (shader.vertex || shader.fragment))
-        diagnostics.Error(path, "Shader contains compute but also vertex and fragment stages");
+        diagnostics.Error("Shader contains compute but also vertex and fragment stages", path);
     if (!shader.vertex || !shader.fragment)
-        diagnostics.Error(path, "Shader must contain both vertex and fragment if no compute is defined");
+        diagnostics.Error("Shader must contain both vertex and fragment if no compute is defined", path);
     return shader;
 }

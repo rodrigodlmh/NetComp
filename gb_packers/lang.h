@@ -42,10 +42,10 @@ struct LangPakString
     uint16_t byteCount;
 };
 
-bool CheckTsvCorrectness(const Tsv& tsv, Diagnostics& diagnostics);
-LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics);
-LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics);
-LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, Diagnostics& diagnostics);
-void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnostics& diagnostics);
+bool CheckTsvCorrectness(const Tsv& tsv, DiagnosticSink& diagnostics);
+LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics);
+LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics);
+LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics);
+void SaveLang(const LangData& data, const std::filesystem::path& path, DiagnosticSink& diagnostics);
 
 #endif //NETCOMP_LANG_H

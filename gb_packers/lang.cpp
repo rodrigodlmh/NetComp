@@ -8,33 +8,33 @@
 #include "util/hash.h"
 #include "util/magic.h"
 
-bool CheckTsvCorrectness(const Tsv& tsv, Diagnostics& diagnostics)
+bool CheckTsvCorrectness(const Tsv& tsv, DiagnosticSink& diagnostics)
 {
     bool valid = true;
     if (tsv.source.empty())
     {
-        diagnostics.Error(tsv.source, "Empty tsv file");
+        diagnostics.Error("Empty tsv file", tsv.source);
         valid = false;
     }
     if (tsv.headers.empty())
     {
-        diagnostics.Error(tsv.source, "Missing headers");
+        diagnostics.Error("Missing headers in tsv file" , tsv.source);
         return false; // To avoid reading headers[0] later
     }
     if (tsv.headers[0] != "key")
     {
-        diagnostics.Error(tsv.source, "Missing key column (must be the first column)");
+        diagnostics.Error("Missing key column (must be the first column)", tsv.source);
         valid = false;
     }
     if (tsv.rows.empty())
     {
-        diagnostics.Error(tsv.source, "Tsv file has no rows");
+        diagnostics.Error("Tsv file has no rows" , tsv.source);
         valid = false;
     }
     return valid;
 }
 
-LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
+LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics)
 {
     LangKeys keys;
 
@@ -47,7 +47,7 @@ LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
         {
             if (row.cells.empty() || row.cells[0].empty())
             {
-                diagnostics.Error(tsv.source, "Missing row", row.line);
+                diagnostics.Error("Missing row", tsv.source, row.line);
                 continue;
             }
             const auto& key = row.cells[0];
@@ -58,11 +58,11 @@ LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
             {
                 if (it->second != key)
                 {
-                    diagnostics.Error(tsv.source, "Hash collision, try renaming the key", row.line);
+                    diagnostics.Error("Hash collision, try renaming the key", tsv.source, row.line);
                 }
                 else
                 {
-                    diagnostics.Error(tsv.source, "Duplicate key", row.line);
+                    diagnostics.Error("Duplicate key", tsv.source, row.line);
                 }
 
                 continue;
@@ -76,7 +76,7 @@ LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
     return keys;
 }
 
-LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostics)
+LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics)
 {
     LangNames names;
 
@@ -93,13 +93,13 @@ LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostic
 
             if (header.empty())
             {
-                diagnostics.Error(tsv.source, "Empty language header");
+                diagnostics.Error("Empty language header", tsv.source);
                 continue;
             }
 
             if (!fileLanguages.emplace(header).second)
             {
-                diagnostics.Error(tsv.source, "Duplicate language header: " + header);
+                diagnostics.Error("Duplicate language header: " + header, tsv.source);
                 continue;
             }
 
@@ -112,7 +112,7 @@ LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, Diagnostics& diagnostic
     return names;
 }
 
-LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, Diagnostics& diagnostics)
+LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics)
 {
     LangData lang;
     lang.name = langName;
@@ -150,7 +150,7 @@ LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const s
             const uint32_t index = it->second;
             if (langIndex >= row.cells.size())
             {
-                diagnostics.Error(tsv.source, "Missing translation column", row.line);
+                diagnostics.Error("Missing translation column", tsv.source, row.line);
                 continue;
             }
             lang.entries[index] = row.cells[langIndex];
@@ -160,11 +160,11 @@ LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const s
     return lang;
 }
 
-void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnostics& diagnostics)
+void SaveLang(const LangData& data, const std::filesystem::path& path, DiagnosticSink& diagnostics)
 {
     if (!std::filesystem::is_directory(path))
     {
-        diagnostics.Error(path, "Provided path for saving is not a directory");
+        diagnostics.Error("Provided path for saving is not a directory", path);
         return;
     }
 
@@ -180,7 +180,7 @@ void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnosti
     {
         if (string.size() > maxStringSize)
         {
-            diagnostics.Error(data.name, "Translation exceeds maximum size of 65535 bytes");
+            diagnostics.Error("Translation " + string +  " exceeds maximum size of 65535 bytes");
 
             const auto offset = static_cast<uint32_t>(blob.size());
             strings.push_back({ offset, 0, 0 });
@@ -192,7 +192,7 @@ void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnosti
 
         if (codepointCount > std::numeric_limits<uint16_t>::max())
         {
-            diagnostics.Error(data.name, "Translation exceeds maximum codepoint count");
+            diagnostics.Error("Translation " + string +  " exceeds maximum codepoint count");
 
             const auto offset = static_cast<uint32_t>(blob.size());
             strings.push_back({ offset, 0, 0 });
@@ -212,7 +212,7 @@ void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnosti
 
     if (strings.empty() || blob.empty())
     {
-        diagnostics.Error(data.name, "Skipped empty language file");
+        diagnostics.Error("Skipped empty language: " + data.name);
     }
 
     LangPakHeader header{};
@@ -224,7 +224,7 @@ void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnosti
     std::ofstream outFile(savePath, std::ios::binary);
     if (!outFile)
     {
-        diagnostics.Error(savePath, "Failed to open file for writing");
+        diagnostics.Error("Failed to open file for writing", savePath);
         return;
     }
     outFile.write(reinterpret_cast<const char*>(&header), sizeof(LangPakHeader));
@@ -232,6 +232,6 @@ void SaveLang(const LangData& data, const std::filesystem::path& path, Diagnosti
     outFile.write(reinterpret_cast<const char*>(blob.data()), static_cast<std::streamsize>(blob.size()));
     if (!outFile)
     {
-        diagnostics.Error(savePath, "Failed to write language file");
+        diagnostics.Error("Failed to write language file", savePath);
     }
 }

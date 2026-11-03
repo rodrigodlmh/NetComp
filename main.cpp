@@ -1,37 +1,34 @@
-#include <iostream>
-
-#include "gb_packers/lang.h"
+#include "util/diagnostics.h"
+#include "util/vfs.h"
 
 int main()
 {
-    const std::filesystem::path currentPath = std::filesystem::current_path();
-    const std::filesystem::path path = currentPath.parent_path() / "test_assets";
-    std::cout << path << std::endl;
+    const std::filesystem::path assetPath = R"(C:\Projects\Build\raw)";
+    const std::filesystem::path outPath = R"(C:\Projects\Build\res")";
 
-    std::vector<Tsv> tsv;
-    for (const auto& file : std::filesystem::directory_iterator(path))
+    EnableConsoleColors();
+    DiagnosticSink diagnostics;
+    diagnostics.SetListener(PrintDiagnostic);
+
+    std::vector<std::filesystem::path> packs;
+    for (const auto& pack : std::filesystem::directory_iterator(assetPath))
+        if (pack.is_directory()) packs.push_back(pack);
+    std::ranges::sort(packs, [](const std::filesystem::path& a, const std::filesystem::path& b) {
+        bool ab = a.filename() == "base", bb = b.filename() == "base";
+        if (ab != bb) return ab;
+        return a.filename() < b.filename();
+    });
+
+    Vfs vfs;
+    for (const auto& pack : packs)
     {
-        if (file.path().extension() == ".tsv")
+        if (!std::filesystem::exists(pack / "pack.json"))
         {
-            std::cout << file.path() << std::endl;
-            tsv.emplace_back(ReadTsv(file.path()));
-            break;
+            diagnostics.Warning("Folder has no pack.json, skipping", pack);
+            continue;
         }
+
     }
 
-    Diagnostics diagnostics;
-    LangKeys keys = GetLangKeys(tsv, diagnostics);
-    LangNames languages = GetLangNames(tsv, diagnostics);
-
-    std::filesystem::path outPath = path / "out";
-    for (const auto& lang : languages.names)
-    {
-        LangData data = GetLang(tsv, keys, lang, diagnostics);
-        SaveLang(data, outPath, diagnostics);
-    }
-    for (const auto& error : diagnostics.errors)
-    {
-        std::cout << error << std::endl;
-    }
     return 0;
 }

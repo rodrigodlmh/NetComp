@@ -51,6 +51,7 @@ find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
 add_executable(NetComp
         main.cpp
+        util/diagnostics.cpp
         raw_assets/tsv.cpp
         gb_packers/lang.cpp
         raw_assets/glsl.cpp

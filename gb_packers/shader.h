@@ -17,6 +17,6 @@ struct ShaderJson
     std::optional<std::string> compute;
 };
 
-ShaderJson ReadShaderJson(const std::filesystem::path& path, Diagnostics& diagnostics);
+ShaderJson ReadShaderJson(const std::filesystem::path& path, DiagnosticSink& diagnostics);
 
 #endif //NETCOMP_SHADER_H
