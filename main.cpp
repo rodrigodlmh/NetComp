@@ -14,7 +14,7 @@ int main()
     for (const auto& pack : std::filesystem::directory_iterator(assetPath))
         if (pack.is_directory()) packs.push_back(pack);
     std::ranges::sort(packs, [](const std::filesystem::path& a, const std::filesystem::path& b) {
-        bool ab = a.filename() == "base", bb = b.filename() == "base";
+        bool ab = a.filename() == "netlink", bb = b.filename() == "netlink";
         if (ab != bb) return ab;
         return a.filename() < b.filename();
     });
@@ -22,12 +22,7 @@ int main()
     Vfs vfs;
     for (const auto& pack : packs)
     {
-        if (!std::filesystem::exists(pack / "pack.json"))
-        {
-            diagnostics.Warning("Folder has no pack.json, skipping", pack);
-            continue;
-        }
-
+        vfs.AddPack(pack, diagnostics);
     }
 
     return 0;

@@ -4,14 +4,12 @@
 
 #include <nlohmann/json.hpp>
 
-using json = nlohmann::json;
-
 ShaderJson ReadShaderJson(const std::filesystem::path& path, DiagnosticSink& diagnostics)
 {
     std::ifstream file(path);
     if (!file) return {};
 
-    const json j = json::parse(file);
+    const nlohmann::json j = nlohmann::json::parse(file);
 
     ShaderJson shader;
     shader.name = j.at("name").get<std::string>();
