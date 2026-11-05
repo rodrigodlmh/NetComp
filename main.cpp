@@ -1,10 +1,15 @@
+#include "gb_packers/lang.h"
+#include "raw_assets/tsv.h"
 #include "util/diagnostics.h"
 #include "util/vfs.h"
 
 int main()
 {
-    const std::filesystem::path assetPath = R"(C:\Projects\Build\raw)";
-    const std::filesystem::path outPath = R"(C:\Projects\Build\res")";
+    const std::filesystem::path assetPath = R"(C:\Projects\Build\in)";
+    const std::filesystem::path outPath = R"(C:\Projects\Build\out)";
+    std::filesystem::create_directory(outPath / "lang");
+    std::filesystem::create_directory(outPath / "shaders");
+    std::filesystem::create_directory(outPath / "textures");
 
     EnableConsoleColors();
     DiagnosticSink diagnostics;
@@ -24,6 +29,21 @@ int main()
     {
         vfs.AddPack(pack, diagnostics);
     }
+
+    std::vector<VfsEntry> tsvsEntries = vfs.List(FileType::TSV);
+    std::vector<Tsv> tsvs(tsvsEntries.size());
+    for (size_t i = 0; i < tsvsEntries.size(); ++i)
+    {
+        tsvs[i] = ReadTsv(tsvsEntries[i].path);
+    }
+    LangKeys keys = GetLangKeys(tsvs, diagnostics);
+    LangNames names = GetLangNames(tsvs, diagnostics);
+    for (const auto& lang : names.names)
+    {
+        LangData data = GetLangData(tsvs, keys, lang, diagnostics);
+        SaveLang(data, outPath / "lang", diagnostics);
+    }
+
 
     return 0;
 }

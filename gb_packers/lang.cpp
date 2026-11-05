@@ -112,7 +112,7 @@ LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnos
     return names;
 }
 
-LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics)
+LangData GetLangData(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics)
 {
     LangData lang;
     lang.name = langName;

@@ -9,9 +9,9 @@ Spv CompileGlslToSpv(const std::filesystem::path& path, const shaderc::Compiler&
 
     shaderc_shader_kind kind;
     auto ext = path.extension();
-    if (ext == ".vert" || ext == ".vsh" || ext == ".vs") kind = shaderc_glsl_vertex_shader;
-    else if (ext == ".frag" || ext == ".fsh" || ext == ".fs") kind = shaderc_glsl_fragment_shader;
-    else if (ext == ".comp" || ext == ".cs") kind = shaderc_glsl_compute_shader;
+    if (ext == ".vert") kind = shaderc_glsl_vertex_shader;
+    else if (ext == ".frag") kind = shaderc_glsl_fragment_shader;
+    else if (ext == ".comp") kind = shaderc_glsl_compute_shader;
     else return {};
 
     std::string source;

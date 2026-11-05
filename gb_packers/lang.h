@@ -45,7 +45,7 @@ struct LangPakString
 bool CheckTsvCorrectness(const Tsv& tsv, DiagnosticSink& diagnostics);
 LangKeys GetLangKeys(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics);
 LangNames GetLangNames(const std::vector<Tsv>& tsvFiles, DiagnosticSink& diagnostics);
-LangData GetLang(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics);
+LangData GetLangData(const std::vector<Tsv>& tsvFiles, const LangKeys& keys, const std::string& langName, DiagnosticSink& diagnostics);
 void SaveLang(const LangData& data, const std::filesystem::path& path, DiagnosticSink& diagnostics);
 
 #endif //NETCOMP_LANG_H

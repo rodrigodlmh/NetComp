@@ -57,6 +57,7 @@ add_executable(NetComp
         raw_assets/glsl.cpp
         gb_packers/shader.cpp
         raw_assets/png.cpp
+        util/vfs.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)
