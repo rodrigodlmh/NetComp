@@ -1,3 +1,4 @@
+#include "gb_packers/font.h"
 #include "gb_packers/global_settings.h"
 #include "gb_packers/lang.h"
 #include "raw_assets/tsv.h"
@@ -9,6 +10,7 @@ int main()
     const std::filesystem::path assetPath = R"(C:\Projects\Build\in)";
     const std::filesystem::path outPath = R"(C:\Projects\Build\out)";
     std::filesystem::create_directory(outPath / "lang");
+    std::filesystem::create_directory(outPath / "ui");
     std::filesystem::create_directory(outPath / "shaders");
     std::filesystem::create_directory(outPath / "textures");
 
@@ -49,6 +51,7 @@ int main()
         SaveLang(data, outPath / "lang", diagnostics);
     }
 
+    SaveFont(vfs, settings.value().font_data, outPath / "ui" / "font.pak", diagnostics);
 
     return 0;
 }

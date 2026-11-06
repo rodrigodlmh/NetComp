@@ -26,11 +26,15 @@ void from_json(const nlohmann::json& j, Font& font)
     font.glyphs = j.at("glyphs").get<std::vector<Glyph>>();
 }
 
-void SaveFont(const Vfs& vfs, const std::filesystem::path& path, const std::filesystem::path& outPath)
+void SaveFont(const Vfs& vfs, const std::filesystem::path& path, const std::filesystem::path& outPath, DiagnosticSink& diagnostics)
 {
     // Read json
     std::ifstream json(path);
-    if (!json.is_open()) return;
+    if (!json.is_open())
+    {
+        diagnostics.Error("Failed to read font json", path);
+        return;
+    }
 
     nlohmann::json j;
     json >> j;
@@ -38,11 +42,19 @@ void SaveFont(const Vfs& vfs, const std::filesystem::path& path, const std::file
 
     // Check out path
     std::ofstream file(outPath, std::ios::binary);
-    if (!file.is_open()) return;
+    if (!file.is_open())
+    {
+        diagnostics.Error("Failed to write font json", outPath);
+        return;
+    }
 
     std::optional<std::filesystem::path> atlasPath = vfs.GetAsset(font.fontAtlas);
-    if (!atlasPath.has_value()) return;
-    Png png = ReadPng(atlasPath.value());
+    if (!atlasPath.has_value())
+    {
+        diagnostics.Error("Font atlas couldn't be found");
+        return;
+    }
+    Png png = ReadAlphaPng(atlasPath.value());
 
     for (auto& glyph : font.glyphs)
     {

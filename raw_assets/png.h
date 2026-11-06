@@ -13,6 +13,7 @@ struct Png
     std::vector<uint8_t> data;
 };
 
-Png ReadPng(const std::filesystem::path& path);
+Png ReadRgbaPng(const std::filesystem::path& path);
+Png ReadAlphaPng(const std::filesystem::path& path);
 
 #endif //NETCOMP_PNG_H

@@ -44,6 +44,6 @@ struct FontPakHeader
 void from_json(const nlohmann::json& j, Glyph& glyph);
 void from_json(const nlohmann::json& j, Font& font);
 
-void SaveFont(const Vfs& vfs, const std::filesystem::path& fontAtlasPath, const std::filesystem::path& outPath);
+void SaveFont(const Vfs& vfs, const std::filesystem::path& fontAtlasPath, const std::filesystem::path& outPath, DiagnosticSink& diagnostics);
 
 #endif //NETCOMP_FONT_H
