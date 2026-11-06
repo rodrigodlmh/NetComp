@@ -1,3 +1,4 @@
+#include "gb_packers/global_settings.h"
 #include "gb_packers/lang.h"
 #include "raw_assets/tsv.h"
 #include "util/diagnostics.h"
@@ -29,6 +30,10 @@ int main()
     {
         vfs.AddPack(pack, diagnostics);
     }
+
+    // Compile assets from global settings
+    std::optional<GlobalSettings> settings = GetGlobalSettings(assetPath / "global_settings.json", vfs, diagnostics);
+    if (!settings.has_value()) return -1;
 
     std::vector<VfsEntry> tsvsEntries = vfs.List(FileType::TSV);
     std::vector<Tsv> tsvs(tsvsEntries.size());

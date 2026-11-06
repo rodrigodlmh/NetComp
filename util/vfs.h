@@ -39,6 +39,7 @@ class Vfs
 public:
 
     void AddPack(const std::filesystem::path& path, DiagnosticSink& diagnostics);
+    [[nodiscard]] std::optional<std::filesystem::path> GetAsset(const std::string& name) const;
     std::vector<VfsEntry> List(FileType type);
 
 private:

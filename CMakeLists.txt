@@ -58,6 +58,8 @@ add_executable(NetComp
         gb_packers/shader.cpp
         raw_assets/png.cpp
         util/vfs.cpp
+        gb_packers/global_settings.cpp
+        gb_packers/font.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)

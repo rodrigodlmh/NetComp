@@ -24,7 +24,7 @@ void Vfs::AddPack(const std::filesystem::path& path, DiagnosticSink& diagnostics
 
         for (const auto& file : files)
         {
-            std::string name = pack.name + ":" + file.stem().string();
+            std::string name = pack.name + ":" + file.filename().string();
             VfsEntry entry{file, name, GetFileType(file.extension().string()), index};
 
             auto [it, inserted] = entries_.emplace(name, entry);
@@ -42,6 +42,16 @@ void Vfs::AddPack(const std::filesystem::path& path, DiagnosticSink& diagnostics
             }
         }
     }
+}
+
+std::optional<std::filesystem::path> Vfs::GetAsset(const std::string& name) const
+{
+    auto it = entries_.find(name);
+    if (it != entries_.end())
+    {
+        return it->second.path;
+    }
+    return std::nullopt;
 }
 
 std::vector<VfsEntry> Vfs::List(const FileType type)
