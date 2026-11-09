@@ -1,5 +1,5 @@
 #include "gb_packers/font.h"
-#include "gb_packers/global_settings.h"
+#include "gb_packers/settings.h"
 #include "gb_packers/lang.h"
 #include "raw_assets/tsv.h"
 #include "util/diagnostics.h"
@@ -18,24 +18,25 @@ int main()
     DiagnosticSink diagnostics;
     diagnostics.SetListener(PrintDiagnostic);
 
-    std::vector<std::filesystem::path> packs;
-    for (const auto& pack : std::filesystem::directory_iterator(assetPath))
-        if (pack.is_directory()) packs.push_back(pack);
-    std::ranges::sort(packs, [](const std::filesystem::path& a, const std::filesystem::path& b) {
-        bool ab = a.filename() == "netlink", bb = b.filename() == "netlink";
-        if (ab != bb) return ab;
-        return a.filename() < b.filename();
-    });
-
-    Vfs vfs;
-    for (const auto& pack : packs)
+    // Compile assets from global settings
+    std::optional<GlobalSettings> settings = GetGlobalSettings(assetPath / "global_settings.json", diagnostics);
+    if (!settings.has_value())
     {
-        vfs.AddPack(pack, diagnostics);
+        diagnostics.Error("Couldn't find 'global_settings.json'", assetPath);
+        return 0;
     }
 
-    // Compile assets from global settings
-    std::optional<GlobalSettings> settings = GetGlobalSettings(assetPath / "global_settings.json", vfs, diagnostics);
-    if (!settings.has_value()) return -1;
+    Vfs vfs;
+    Definitions defs;
+
+    for (const auto& pack : settings.value().packs)
+    {
+        const auto packPath = assetPath / pack;
+        vfs.AddPack(packPath, pack, diagnostics);
+
+        if (auto local = GetLocalSettings(packPath / "pack.json", diagnostics))
+            OverrideDefinitions(defs, local);
+    }
 
     std::vector<VfsEntry> tsvsEntries = vfs.List(FileType::TSV);
     std::vector<Tsv> tsvs(tsvsEntries.size());
@@ -51,7 +52,17 @@ int main()
         SaveLang(data, outPath / "lang", diagnostics);
     }
 
-    SaveFont(vfs, settings.value().font_data, outPath / "ui" / "font.pak", diagnostics);
+    std::optional<std::string> fontData = GetDef(defs, Defs::FontData);
+    if (fontData.has_value())
+    {
+        std::optional<std::filesystem::path> fontAsset = vfs.GetAsset(fontData.value());
+        if (!fontAsset.has_value())
+        {
+            diagnostics.Error("Failed to find font asset referenced in global settings");
+            return 0;
+        }
+        SaveFont(vfs, fontAsset.value(), outPath / "ui" / "font.pak", diagnostics);
+    }
 
     return 0;
 }

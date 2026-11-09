@@ -55,11 +55,11 @@ add_executable(NetComp
         raw_assets/tsv.cpp
         gb_packers/lang.cpp
         raw_assets/glsl.cpp
-        gb_packers/shader.cpp
         raw_assets/png.cpp
         util/vfs.cpp
-        gb_packers/global_settings.cpp
+        gb_packers/settings.cpp
         gb_packers/font.cpp
+        raw_assets/json.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)

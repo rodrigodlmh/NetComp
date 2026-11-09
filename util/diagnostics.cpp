@@ -52,12 +52,12 @@ void EnableConsoleColors()
 void PrintDiagnostic(const Diagnostic& d)
 {
     auto color = "\x1b[0m";
-    auto label = "info";
+    auto label = "Info";
     switch (d.severity)
     {
-    case Severity::Info:    color = "\x1b[36m"; label = "info";    break;
-    case Severity::Warning: color = "\x1b[33m"; label = "warning"; break;
-    case Severity::Error:   color = "\x1b[31m"; label = "error";   break;
+        case Severity::Info:    color = "\x1b[36m"; label = "Info";    break;
+        case Severity::Warning: color = "\x1b[33m"; label = "Warning"; break;
+        case Severity::Error:   color = "\x1b[31m"; label = "Error";   break;
     }
     std::string loc;
     if (!d.file.empty())

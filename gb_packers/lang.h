@@ -31,7 +31,9 @@ struct LangPakHeader
 {
     uint32_t magic;
     uint32_t version;
+    uint32_t maxStringCount;
     uint32_t stringCount;
+    uint32_t maxBlobSize;
     uint32_t blobSize;
 };
 
@@ -40,6 +42,13 @@ struct LangPakString
     uint32_t offset;
     uint16_t glyphCount;
     uint16_t byteCount;
+};
+
+struct LangPak
+{
+    LangPakHeader header;
+    std::vector<LangPakString> strings;
+    std::vector<uint8_t> blob;
 };
 
 bool CheckTsvCorrectness(const Tsv& tsv, DiagnosticSink& diagnostics);

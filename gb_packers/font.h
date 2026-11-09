@@ -5,13 +5,12 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <optional>
 
 #include "nlohmann/json.hpp"
 
 #include "util/vfs.h"
 
-struct Glyph
+struct JsonGlyph
 {
     uint32_t code;
     float uvminx;
@@ -22,11 +21,12 @@ struct Glyph
     uint32_t advance;
 };
 
-struct Font
+struct JsonFont
 {
     std::string fontAtlas;
     uint32_t glyphHeight;
-    std::vector<Glyph> glyphs;
+    JsonGlyph unknownGlyph;
+    std::vector<JsonGlyph> glyphs;
 };
 
 struct FontPakHeader
@@ -41,9 +41,27 @@ struct FontPakHeader
     uint64_t atlasDataSize;
 };
 
-void from_json(const nlohmann::json& j, Glyph& glyph);
-void from_json(const nlohmann::json& j, Font& font);
+struct FontPakGlyph // Doesn't include the code since the code is the index to the array
+{
+    float uvminx;
+    float uvminy;
+    float uvmaxx;
+    float uvmaxy;
+    uint32_t width;
+    uint32_t advance;
+};
 
-void SaveFont(const Vfs& vfs, const std::filesystem::path& fontAtlasPath, const std::filesystem::path& outPath, DiagnosticSink& diagnostics);
+struct FontPak
+{
+    FontPakHeader header;
+    std::vector<FontPakGlyph> glyphs;
+    std::vector<uint8_t> atlasData;
+};
+
+void from_json(const nlohmann::json& j, JsonGlyph& glyph);
+void from_json(const nlohmann::json& j, JsonFont& font);
+
+void SaveFont(const Vfs& vfs, const std::filesystem::path& jsonPath,
+              const std::filesystem::path& outPath, DiagnosticSink& diagnostics);
 
 #endif //NETCOMP_FONT_H

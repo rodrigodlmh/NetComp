@@ -5,7 +5,7 @@
 #include "raw_assets/png.h"
 #include "util/magic.h"
 
-void from_json(const nlohmann::json& j, Glyph& glyph)
+void from_json(const nlohmann::json& j, JsonGlyph& glyph)
 {
     if (!j.is_array() || j.size() != 7)
         throw nlohmann::json::type_error::create(302, "Invalid glyph definition", &j);
@@ -19,62 +19,70 @@ void from_json(const nlohmann::json& j, Glyph& glyph)
     glyph.advance = j[6].get<uint32_t>();
 }
 
-void from_json(const nlohmann::json& j, Font& font)
+void from_json(const nlohmann::json& j, JsonFont& font)
 {
     font.fontAtlas = j.at("texture").get<std::string>();
     font.glyphHeight = j.at("glyph_height").get<uint32_t>();
-    font.glyphs = j.at("glyphs").get<std::vector<Glyph>>();
+    font.unknownGlyph = j.at("unknown_glyph").get<JsonGlyph>();
+    font.glyphs = j.at("glyphs").get<std::vector<JsonGlyph>>();
 }
 
-void SaveFont(const Vfs& vfs, const std::filesystem::path& path, const std::filesystem::path& outPath, DiagnosticSink& diagnostics)
+void SaveFont(const Vfs& vfs, const std::filesystem::path& jsonPath,
+              const std::filesystem::path& outPath, DiagnosticSink& diagnostics)
 {
-    // Read json
-    std::ifstream json(path);
-    if (!json.is_open())
-    {
-        diagnostics.Error("Failed to read font json", path);
+ std::ifstream jsonFile(jsonPath);
+    if (!jsonFile.is_open()) { diagnostics.Error("Failed to read font json", jsonPath); return; }
+
+    JsonFont font;
+    try {
+        font = nlohmann::json::parse(jsonFile).get<JsonFont>();
+    } catch (const nlohmann::json::exception& e) {
+        diagnostics.Error(std::string("Invalid font json: ") + e.what(), jsonPath);
         return;
     }
 
-    nlohmann::json j;
-    json >> j;
-    auto font = j.get<Font>();
+    if (font.glyphs.empty()) { diagnostics.Error("Font has no glyphs", jsonPath); return; }
 
-    // Check out path
+    auto atlasPath = vfs.GetAsset(font.fontAtlas);
+    if (!atlasPath) { diagnostics.Error("Font atlas couldn't be found", jsonPath); return; }
+
+    Png png = ReadAlphaPng(*atlasPath);
+    if (png.width == 0 || png.height == 0) { diagnostics.Error("Invalid atlas dimensions", *atlasPath); return; }
+
+    std::ranges::sort(font.glyphs, {}, &JsonGlyph::code);
+    for (size_t i = 1; i < font.glyphs.size(); ++i)
+        if (font.glyphs[i].code == font.glyphs[i - 1].code)
+        { diagnostics.Error("Duplicate glyph code", jsonPath); return; }
+
+    const uint32_t maxGlyphCode = font.glyphs.back().code;
+    if (maxGlyphCode > 0x10FFFF) { diagnostics.Error("Glyph code out of range", jsonPath); return; }
+
+    auto toPak = [&](const JsonGlyph& g) {
+        return FontPakGlyph{
+            g.uvminx / static_cast<float>(png.width), g.uvminy / static_cast<float>(png.height),
+            g.uvmaxx / static_cast<float>(png.width), g.uvmaxy / static_cast<float>(png.height),
+            g.width, g.advance };
+    };
+
+    FontPak pak{};
+    pak.header.magic = MakeMagic('F','P','A','K');
+    pak.header.version = 1;
+    pak.header.glyphHeight = font.glyphHeight;
+    pak.header.glyphCount = maxGlyphCode + 1;
+    pak.header.atlasWidth = png.width;
+    pak.header.atlasHeight = png.height;
+    pak.header.atlasChannels = png.channels;
+    pak.header.atlasDataSize = png.data.size();
+
+    pak.glyphs.assign(maxGlyphCode + 1, toPak(font.unknownGlyph));
+    for (const auto& g : font.glyphs)
+        pak.glyphs[g.code] = toPak(g);
+
     std::ofstream file(outPath, std::ios::binary);
-    if (!file.is_open())
-    {
-        diagnostics.Error("Failed to write font json", outPath);
-        return;
-    }
+    if (!file.is_open()) { diagnostics.Error("Failed to open output pak", outPath); return; }
 
-    std::optional<std::filesystem::path> atlasPath = vfs.GetAsset(font.fontAtlas);
-    if (!atlasPath.has_value())
-    {
-        diagnostics.Error("Font atlas couldn't be found");
-        return;
-    }
-    Png png = ReadAlphaPng(atlasPath.value());
-
-    for (auto& glyph : font.glyphs)
-    {
-        glyph.uvminx /= static_cast<float>(png.width);
-        glyph.uvminy /= static_cast<float>(png.height);
-        glyph.uvmaxx /= static_cast<float>(png.width);
-        glyph.uvmaxy /= static_cast<float>(png.height);
-    }
-
-    FontPakHeader header{};
-    header.magic = MakeMagic('F', 'P', 'A', 'K');
-    header.version = 1;
-    header.glyphHeight = font.glyphHeight;
-    header.glyphCount = static_cast<uint32_t>(font.glyphs.size());
-    header.atlasWidth = png.width;
-    header.atlasHeight = png.height;
-    header.atlasChannels = png.channels;
-    header.atlasDataSize = png.data.size();
-
-    file.write(reinterpret_cast<const char*>(&header), sizeof(FontPakHeader));
-    file.write(reinterpret_cast<const char*>(font.glyphs.data()), font.glyphs.size() * sizeof(Glyph));
-    file.write(reinterpret_cast<const char*>(png.data.data()), png.data.size() * sizeof(png.data[0]));
+    file.write(reinterpret_cast<const char*>(&pak.header), sizeof(pak.header));
+    file.write(reinterpret_cast<const char*>(pak.glyphs.data()), pak.glyphs.size() * sizeof(FontPakGlyph));
+    file.write(reinterpret_cast<const char*>(png.data.data()), png.data.size());
+    if (!file) diagnostics.Error("Failed writing font pak", outPath);
 }
