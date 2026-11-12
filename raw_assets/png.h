@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <vector>
+#include <optional>
 
 struct Png
 {
@@ -13,7 +14,7 @@ struct Png
     std::vector<uint8_t> data;
 };
 
-Png ReadRgbaPng(const std::filesystem::path& path);
-Png ReadAlphaPng(const std::filesystem::path& path);
+std::optional<Png> ReadRgbaPng(const std::filesystem::path& path);
+std::optional<Png> ReadAlphaPng(const std::filesystem::path& path);
 
 #endif //NETCOMP_PNG_H

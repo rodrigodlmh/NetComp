@@ -3,11 +3,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Png ReadRgbaPng(const std::filesystem::path& path)
+std::optional<Png> ReadRgbaPng(const std::filesystem::path& path)
 {
     int w, h, c;
     stbi_uc* data = stbi_load(path.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
-    if (!data) return {};
+    if (!data) return std::nullopt;
 
     Png png;
     png.width = w;
@@ -22,11 +22,11 @@ Png ReadRgbaPng(const std::filesystem::path& path)
     return png;
 }
 
-Png ReadAlphaPng(const std::filesystem::path& path)
+std::optional<Png> ReadAlphaPng(const std::filesystem::path& path)
 {
     int w, h, c;
     stbi_uc* data = stbi_load(path.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
-    if (!data) return {};
+    if (!data) return std::nullopt;
     const stbi_uc* src = data;
 
     Png png;

@@ -25,10 +25,10 @@ std::vector<std::string> SplitTabs(std::string_view line)
     return cells;
 }
 
-Tsv ReadTsv(const std::filesystem::path& path)
+std::optional<Tsv> ReadTsv(const std::filesystem::path& path)
 {
     std::ifstream f(path, std::ios::binary);
-    if (!f) return {};
+    if (!f) return std::nullopt;
 
     std::string text((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
     if (text.starts_with("\xEF\xBB\xBF")) text.erase(0, 3); // BOM
@@ -50,9 +50,9 @@ Tsv ReadTsv(const std::filesystem::path& path)
         if (!line.empty() && line.back() == '\r') line.remove_suffix(1);
         if (IsBlankLine(line)) continue;
 
-        auto cells = SplitTabs(line);
+        std::vector<std::string> cells = SplitTabs(line);
         if (isHeader) { result.headers = std::move(cells); isHeader = false; }
-        else          { result.rows.push_back({ lineNo, std::move(cells) }); }
+        else          { result.rows.push_back(std::move(cells)); }
     }
     return result;
 }
