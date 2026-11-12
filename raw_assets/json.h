@@ -8,5 +8,6 @@
 #include <nlohmann/json.hpp>
 
 std::optional<nlohmann::json> LoadJson(const std::filesystem::path& path);
+std::optional<nlohmann::ordered_json> LoadOrderedJson(const std::filesystem::path& path);
 
 #endif //NETCOMP_JSON_H

@@ -2,6 +2,7 @@
 
 #include "bin_packers/lang.h"
 #include "bin_packers/font.h"
+#include "bin_packers/ui.h"
 
 int main()
 {
@@ -10,6 +11,7 @@ int main()
 
     SaveLanguages(inPath / "lang" / "lang.tsv", outPath / "lang");
     SaveFont(inPath / "ui" / "font.json", outPath / "ui");
+    SaveUi(inPath / "ui" / "ui.json", outPath / "ui");
 
    return 0;
 }

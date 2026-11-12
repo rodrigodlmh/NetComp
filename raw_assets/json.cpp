@@ -11,3 +11,13 @@ std::optional<nlohmann::json> LoadJson(const std::filesystem::path& path)
     if (j.is_discarded()) return std::nullopt;
     return j;
 }
+
+std::optional<nlohmann::ordered_json> LoadOrderedJson(const std::filesystem::path& path)
+{
+    std::ifstream file(path);
+    if (!file) return std::nullopt;
+
+    nlohmann::ordered_json j = nlohmann::ordered_json::parse(file, nullptr, false);
+    if (j.is_discarded()) return std::nullopt;
+    return j;
+}

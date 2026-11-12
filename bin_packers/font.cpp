@@ -23,7 +23,6 @@ void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& 
             std::cout << "Failed to load font atlas: " << atlasPath.string() << "\n";
         }
 
-
         Font font{};
         font.atlasBlob.assign(png->data.begin(), png->data.end());
 
@@ -90,7 +89,7 @@ void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& 
     }
     catch (const std::exception& ex)
     {
-        std::cerr << "Invalid font json (" << inPath << "): " << ex.what() << "\n";
+        std::cout << "Invalid font json (" << inPath << "): " << ex.what() << "\n";
     }
 }
 
