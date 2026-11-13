@@ -51,8 +51,7 @@ void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& 
 
         // Dense table: index == codepoint, gaps (and index 0) = unknown glyph
         font.glyphs.assign(maxCodepoint + 1, unknown);
-        for (const auto& [cp, g] : parsed)
-            font.glyphs[cp] = g;
+        for (const auto& [cp, g] : parsed) font.glyphs[cp] = g;
 
         // ---- Header ----
         font.header.magic         = MakeMagic('F', 'O', 'N', 'T');

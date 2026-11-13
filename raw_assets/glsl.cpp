@@ -1,6 +1,7 @@
 #include "raw_assets/glsl.h"
 
 #include <fstream>
+#include <iostream>
 
 std::optional<Spv> CompileGlslToSpv(const std::filesystem::path& path, const shaderc::Compiler& compiler, const shaderc::CompileOptions& options)
 {
@@ -12,7 +13,7 @@ std::optional<Spv> CompileGlslToSpv(const std::filesystem::path& path, const sha
     if (ext == ".vert") kind = shaderc_glsl_vertex_shader;
     else if (ext == ".frag") kind = shaderc_glsl_fragment_shader;
     else if (ext == ".comp") kind = shaderc_glsl_compute_shader;
-    else return {};
+    else return std::nullopt;
 
     std::string source;
     const uintmax_t fileSize = std::filesystem::file_size(path);
@@ -23,7 +24,8 @@ std::optional<Spv> CompileGlslToSpv(const std::filesystem::path& path, const sha
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success)
     {
-        return {};
+        std::cout << result.GetErrorMessage() << std::endl;
+        return std::nullopt;
     }
 
     Spv out;
