@@ -5,6 +5,7 @@
 
 std::optional<Png> ReadRgbaPng(const std::filesystem::path& path)
 {
+    if (path.extension() != ".png") return std::nullopt;
     int w, h, c;
     stbi_uc* data = stbi_load(path.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
     if (!data) return std::nullopt;

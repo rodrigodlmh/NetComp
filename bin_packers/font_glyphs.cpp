@@ -1,4 +1,4 @@
-#include "bin_packers/font.h"
+#include "bin_packers/font_glyphs.h"
 
 #include <fstream>
 #include <iostream>
@@ -6,28 +6,26 @@
 #include "raw_assets/png.h"
 #include "util/magic.h"
 
-void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& outPath)
+std::optional<FontGlyphs> SaveFontGlyphs(const std::filesystem::path& inPath, const std::filesystem::path& outPath)
 {
     std::optional<nlohmann::json> fontJson = LoadJson(inPath);
     if (!fontJson)
     {
         std::cout << "Failed to load json: " << inPath.string() << "\n";
-        return;
+        return std::nullopt;
     }
     try
     {
-        const std::filesystem::path atlasPath = inPath.parent_path() / fontJson->at("atlas").get<std::string>();
-        std::optional<Png> png = ReadAlphaPng(atlasPath);
-        if (!png)
-        {
-            std::cout << "Failed to load font atlas: " << atlasPath.string() << "\n";
-        }
+        FontGlyphs font{};
 
-        Font font{};
-        font.atlasBlob.assign(png->data.begin(), png->data.end());
-
+        uint32_t width = fontJson->at("atlas_width").get<uint32_t>();
         uint32_t unknownCp = 0;
-        const FontGlyph unknown = ParseGlyph(fontJson->at("unknown_glyph"), png->width, png->height, unknownCp);
+        const std::optional<FontGlyph> unknown = ParseGlyph(fontJson->at("unknown_glyph"), width, width, unknownCp);
+        if (!unknown)
+        {
+            std::cout << "Failed to parse unknown glyph" << std::endl;
+            return std::nullopt;
+        }
 
         // First pass: parse everything and find the highest codepoint
         const auto& glyphsJson = fontJson->at("glyphs");
@@ -38,19 +36,24 @@ void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& 
         for (const auto& e : glyphsJson)
         {
             uint32_t cp = 0;
-            FontGlyph g = ParseGlyph(e, png->width, png->height, cp);
+            std::optional<FontGlyph> g = ParseGlyph(e, width, width, cp);
+            if (!g)
+            {
+                std::cout << "Skipping glyph" << "\n";
+                continue;
+            }
             maxCodepoint = std::max(maxCodepoint, cp);
-            parsed.emplace_back(cp, g);
+            parsed.emplace_back(cp, *g);
         }
 
         if (maxCodepoint > 0xFFFF)
         {
             std::cout << "SaveFont: codepoint " << maxCodepoint << " too large for a dense table\n";
-            return;
+            return std::nullopt;
         }
 
         // Dense table: index == codepoint, gaps (and index 0) = unknown glyph
-        font.glyphs.assign(maxCodepoint + 1, unknown);
+        font.glyphs.assign(maxCodepoint + 1, *unknown);
         for (const auto& [cp, g] : parsed) font.glyphs[cp] = g;
 
         // ---- Header ----
@@ -58,46 +61,39 @@ void SaveFont(const std::filesystem::path& inPath, const std::filesystem::path& 
         font.header.version       = 1;
         font.header.glyphHeight   = fontJson->at("glyph_height").get<uint32_t>();
         font.header.glyphCount    = static_cast<uint32_t>(font.glyphs.size());
-        font.header.atlasWidth    = static_cast<uint32_t>(png->width);
-        font.header.atlasHeight   = static_cast<uint32_t>(png->height);
-        font.header.atlasChannels = static_cast<uint32_t>(png->channels);
-        font.header.atlasDataSize = static_cast<uint32_t>(font.atlasBlob.size());
 
         // ---- Write ----
-        std::filesystem::create_directories(outPath);
-        std::filesystem::path fontBinPath = outPath / "font.bin";
-        std::ofstream out(fontBinPath, std::ios::binary | std::ios::trunc);
+        std::ofstream out(outPath, std::ios::binary | std::ios::trunc);
         if (!out)
         {
-            std::cout << "Failed to open output " << fontBinPath.string() << "\n";
-            return;
+            std::cout << "Failed to open output " << outPath.string() << "\n";
+            return std::nullopt;
         }
 
         out.write(reinterpret_cast<const char*>(&font.header), sizeof(FontHeader));
         out.write(reinterpret_cast<const char*>(font.glyphs.data()), static_cast<std::streamsize>(font.glyphs.size() * sizeof(FontGlyph)));
-        out.write(reinterpret_cast<const char*>(font.atlasBlob.data()), static_cast<std::streamsize>(font.atlasBlob.size()));
 
         if (!out)
         {
-            std::cout << "Write failed for " << fontBinPath.string() << "\n";
+            std::cout << "Write failed for " << outPath.string() << "\n";
+            return std::nullopt;
         }
-        else
-        {
-            std::cout << "Saved font.bin: " << fontBinPath.string() << "\n";
-        }
+        std::cout << "Saved font.bin: " << outPath.string() << "\n";
+        return font;
     }
     catch (const std::exception& ex)
     {
         std::cout << "Invalid font json (" << inPath << "): " << ex.what() << "\n";
     }
+    return std::nullopt;
 }
 
-FontGlyph ParseGlyph(const nlohmann::json& e, const uint32_t atlasW, const uint32_t atlasH, uint32_t& outCodepoint)
+std::optional<FontGlyph> ParseGlyph(const nlohmann::json& e, const uint32_t atlasW, const uint32_t atlasH, uint32_t& outCodepoint)
 {
     if (!e.is_array() || e.size() != 7)
     {
         std::cout << "Glyph must be an array of 7 elements" << std::endl;
-        return{};
+        return std::nullopt;
     }
 
     outCodepoint = e.at(0).get<uint32_t>();

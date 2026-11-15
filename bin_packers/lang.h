@@ -7,6 +7,8 @@
 #include <vector>
 #include <filesystem>
 
+#include "font_glyphs.h"
+
 struct Utf8Result
 {
     uint32_t codepoint;
@@ -23,11 +25,17 @@ struct LangHeader
     uint32_t blobSize;
 };
 
+struct LangStringMetrics
+{
+    uint32_t glyphCount; uint32_t width;
+};
+
 struct LangString
 {
     uint32_t offset;
-    uint16_t glyphCount;
-    uint16_t byteCount;
+    uint32_t glyphCount;
+    uint32_t byteCount;
+    uint32_t width;
 };
 
 struct Lang
@@ -37,12 +45,15 @@ struct Lang
     std::vector<uint8_t> blob;
 };
 
+using LangKeys = std::unordered_map<std::string, uint32_t>;
+
 inline bool IsContinuation(const uint8_t b) { return (b & 0xC0) == 0x80; }
 // NUL terminated strings
-[[nodiscard]] Utf8Result Next(const uint8_t* str, const uint32_t index);
+[[nodiscard]] Utf8Result Next(const uint8_t* str, uint32_t index);
 [[nodiscard]] uint32_t Count(const uint8_t* str);
+[[nodiscard]] LangStringMetrics MeasureString(const uint8_t* strData, const FontGlyphs& glyphs);
 
-void SaveLanguages(const std::filesystem::path& inPath, const std::filesystem::path& outPath);
-void WriteLang(const std::filesystem::path& path, const Lang& lang);
+std::optional<LangKeys> SaveLanguages(const std::filesystem::path& inPath, const FontGlyphs& glyphs, const std::filesystem::path& outPath);
+bool WriteLang(const std::filesystem::path& path, const Lang& lang);
 
 #endif //NETCOMP_LANG_H

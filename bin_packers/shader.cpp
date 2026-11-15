@@ -82,7 +82,9 @@ void SaveShader(const shaderc::Compiler& compiler, const std::filesystem::path& 
         shader.header.fragSize = static_cast<uint32_t>(shader.fragData.size());
     }
 
-    std::ofstream file(outPath / (name + ".bin"), std::ios::binary);
+    std::filesystem::create_directories(outPath);
+    std::filesystem::path shaderPath = outPath / (name + ".bin");
+    std::ofstream file(shaderPath, std::ios::binary);
     if (!file)
     {
         std::cerr << "Could not create shader file\n";
@@ -98,11 +100,11 @@ void SaveShader(const shaderc::Compiler& compiler, const std::filesystem::path& 
     }
     if (!shader.fragData.empty())
     {
-        file.write( reinterpret_cast<const char*>(shader.fragData.data()), static_cast<std::streamsize>(shader.fragData.size() * sizeof(uint32_t)));
+        file.write(reinterpret_cast<const char*>(shader.fragData.data()), static_cast<std::streamsize>(shader.fragData.size() * sizeof(uint32_t)));
     }
     if (!shader.compData.empty())
     {
-        file.write( reinterpret_cast<const char*>(shader.compData.data()), static_cast<std::streamsize>(shader.compData.size() * sizeof(uint32_t)));
+        file.write(reinterpret_cast<const char*>(shader.compData.data()), static_cast<std::streamsize>(shader.compData.size() * sizeof(uint32_t)));
     }
 
     if (!file)
@@ -111,6 +113,6 @@ void SaveShader(const shaderc::Compiler& compiler, const std::filesystem::path& 
     }
     else
     {
-        std::cout << "Saved shader " << name << "\n";
+        std::cout << "Saved shader: " << shaderPath.string() << "\n";
     }
 }

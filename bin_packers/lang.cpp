@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "utf8.h"
 #include "raw_assets/tsv.h"
 #include "util/magic.h"
 
@@ -86,22 +85,59 @@ uint32_t Count(const uint8_t* str)
     return count;
 }
 
-void SaveLanguages(const std::filesystem::path& inPath, const std::filesystem::path& outPath)
+LangStringMetrics MeasureString(const uint8_t* strData, const FontGlyphs& glyphs)
+{
+    LangStringMetrics m{};
+    uint32_t index = 0;
+    for (;;)
+    {
+        const Utf8Result r = Next(strData, index);
+        if (r.codepoint == '\0') break;
+
+        index = r.nextIndex;
+
+        const FontGlyph glyph = GetGlyph(glyphs, r.codepoint);
+        m.width += glyph.advance;
+        m.glyphCount++;
+    }
+    return m;
+}
+
+std::optional<LangKeys> SaveLanguages(const std::filesystem::path& inPath, const FontGlyphs& glyphs, const std::filesystem::path& outPath)
 {
     const std::optional<Tsv> tsv = ReadTsv(inPath);
     if (!tsv)
     {
         std::cout << "Failed to read TSV file: " << inPath.string() << std::endl;
-        return;
+        return std::nullopt;
     }
     if (tsv->headers.size() < 2)
     {
         std::cout << "TSV needs a key column and at least one language column: " << inPath.string() << std::endl;
-        return;
+        return std::nullopt;
     }
 
     const size_t langCount = tsv->headers.size() - 1; // Minus the key column
     const size_t rowCount = tsv->rows.size();
+
+    LangKeys keys;
+    keys.reserve(rowCount);
+    for (size_t ri = 0; ri < rowCount; ++ri)
+    {
+        const auto& row = tsv->rows[ri];
+        if (row.empty() || row[0].empty())
+        {
+            std::cout << "Empty key at row " << ri << "\n";
+            return std::nullopt;
+        }
+
+        const auto [it, inserted] = keys.emplace(row[0], static_cast<uint32_t>(ri));
+        if (!inserted)
+        {
+            std::cout << "Duplicate key '" << row[0] << "' at rows " << it->second << " and " << ri << "\n";
+            return std::nullopt;
+        }
+    }
 
     std::vector<Lang> langs(langCount);
 
@@ -114,29 +150,29 @@ void SaveLanguages(const std::filesystem::path& inPath, const std::filesystem::p
         Lang& lang = langs[li];
         lang.strings.reserve(rowCount);
 
-        for (const auto& row : tsv->rows)
+        for (size_t ri = 0; ri < rowCount; ++ri)
         {
-            const std::string key  = (!row.empty() && !row[0].empty()) ? row[0] : "?";
-            const std::string text = (col < row.size() && !row[col].empty()) ? row[col] : "?";
+            const auto& row = tsv->rows[ri];
+            const std::string& key = row[0]; // Validated above
 
-            if (text.size() > UINT16_MAX)
+            const bool missing = col >= row.size() || row[col].empty();
+            if (missing) std::cout << "[" << langName << "] Missing translation for '" << key << "'\n";
+            const std::string text = missing ? "?" : row[col];
+
+            // The blob offset (and final blob size) must fit in a uint32_t. +1 for the NUL terminator.
+            if (text.size() + 1 > UINT32_MAX - lang.blob.size())
             {
-                std::cout << "[" << langName << "] String too long (>65535 bytes), key '" << key << "'" << std::endl;
-                return;
+                std::cout << "[" << langName << "] Blob exceeds 4 GB, key '" << key << "'\n";
+                return std::nullopt;
             }
 
-            if (lang.blob.size() > UINT32_MAX - text.size())
-            {
-                std::cout << "[" << langName << "] Blob exceeds 4 GB, key '" << key << "'" << std::endl;
-                return;
-            }
-
-            const size_t glyphs = static_cast<size_t>(utf8::distance(text.begin(), text.end()));
+            const LangStringMetrics m = MeasureString(reinterpret_cast<const uint8_t*>(text.c_str()), glyphs);
 
             LangString s{};
             s.offset     = static_cast<uint32_t>(lang.blob.size());
-            s.byteCount  = static_cast<uint16_t>(text.size());
-            s.glyphCount = static_cast<uint16_t>(Count(reinterpret_cast<const uint8_t*>(text.c_str())));
+            s.byteCount  = static_cast<uint32_t>(text.size());
+            s.glyphCount = m.glyphCount;
+            s.width      = m.width;
 
             lang.strings.push_back(s);
             lang.blob.insert(lang.blob.end(), text.begin(), text.end());
@@ -144,7 +180,7 @@ void SaveLanguages(const std::filesystem::path& inPath, const std::filesystem::p
         }
 
         lang.header.magic       = MakeMagic('L', 'A', 'N', 'G');
-        lang.header.version     = 1;
+        lang.header.version     = 2; // LangString layout changed
         lang.header.langCount   = static_cast<uint32_t>(langCount);
         lang.header.stringCount = static_cast<uint32_t>(lang.strings.size());
         lang.header.blobSize    = static_cast<uint32_t>(lang.blob.size());
@@ -155,18 +191,27 @@ void SaveLanguages(const std::filesystem::path& inPath, const std::filesystem::p
     // Set same max blob size for all
     for (Lang& lang : langs) lang.header.maxBlobSize = maxBlobSize;
 
-    std::filesystem::create_directories(outPath);
+    std::error_code ec;
+    std::filesystem::create_directories(outPath, ec);
+    if (ec)
+    {
+        std::cout << "Failed to create " << outPath.string() << ": " << ec.message() << "\n";
+        return std::nullopt;
+    }
     for (size_t li = 0; li < langCount; ++li)
-        WriteLang(outPath / (tsv->headers[li + 1] + ".bin"), langs[li]);
+        if (!WriteLang(outPath / (tsv->headers[li + 1] + ".bin"), langs[li]))
+            return std::nullopt;
+
+    return keys;
 }
 
-void WriteLang(const std::filesystem::path& path, const Lang& lang)
+bool WriteLang(const std::filesystem::path& path, const Lang& lang)
 {
     std::ofstream file(path, std::ios::binary | std::ios::trunc);
     if (!file)
     {
         std::cout << "Failed to open file while writing lang: " << path.string() << std::endl;
-        return;
+        return false;
     }
 
     file.write(reinterpret_cast<const char*>(&lang.header), sizeof(LangHeader));
@@ -176,9 +221,8 @@ void WriteLang(const std::filesystem::path& path, const Lang& lang)
     if (!file)
     {
         std::cout << "Failed to save file while writing lang: " << path.string() << std::endl;
+        return false;
     }
-    else
-    {
-        std::cout << "Saved lang.bin: " << path.string() << std::endl;
-    }
+    std::cout << "Saved lang.bin: " << path.string() << std::endl;
+    return true;
 }

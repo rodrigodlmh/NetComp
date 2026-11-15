@@ -56,9 +56,10 @@ add_executable(NetComp
         raw_assets/png.cpp
         raw_assets/json.cpp
         bin_packers/lang.cpp
-        bin_packers/font.cpp
+        bin_packers/font_glyphs.cpp
         bin_packers/shader.cpp
-        bin_packers/ui.cpp
+        bin_packers/ui_sprites.cpp
+        bin_packers/texture.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)
