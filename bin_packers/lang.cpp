@@ -103,9 +103,57 @@ LangStringMetrics MeasureString(const uint8_t* strData, const FontGlyphs& glyphs
     return m;
 }
 
+std::optional<Tsv> ReadTsvFolder(const std::filesystem::path& inPath)
+{
+    // Every .tsv except ui, sorted so the order is stable between runs
+    std::vector<std::filesystem::path> files;
+    for (const auto& entry : std::filesystem::directory_iterator(inPath))
+    {
+        if (!entry.is_regular_file()) continue;
+        if (entry.path().extension() != ".tsv") continue;
+        if (entry.path().filename() == "ui.tsv") continue;
+        files.push_back(entry.path());
+    }
+    std::ranges::sort(files);
+
+    // ui always goes first
+    const std::filesystem::path uiPath = inPath / "ui.tsv";
+    if (!std::filesystem::exists(uiPath))
+    {
+        std::cout << "Missing ui.tsv in " << inPath.string() << std::endl;
+        return std::nullopt;
+    }
+    files.insert(files.begin(), uiPath);
+
+    // Join them
+    Tsv merged;
+    for (const auto& path : files)
+    {
+        const std::optional<Tsv> tsv = ReadTsv(path);
+        if (!tsv)
+        {
+            std::cout << "Failed to read TSV file: " << path.string() << std::endl;
+            return std::nullopt;
+        }
+
+        if (merged.headers.empty())
+        {
+            merged.headers = tsv->headers; // First file (ui) sets the columns
+        }
+        else if (tsv->headers != merged.headers)
+        {
+            std::cout << "Headers don't match ui.tsv: " << path.string() << std::endl;
+            return std::nullopt;
+        }
+
+        merged.rows.insert(merged.rows.end(), tsv->rows.begin(), tsv->rows.end());
+    }
+    return merged;
+}
+
 std::optional<LangKeys> SaveLanguages(const std::filesystem::path& inPath, const FontGlyphs& glyphs, const std::filesystem::path& outPath)
 {
-    const std::optional<Tsv> tsv = ReadTsv(inPath);
+    const std::optional<Tsv> tsv = ReadTsvFolder(inPath);
     if (!tsv)
     {
         std::cout << "Failed to read TSV file: " << inPath.string() << std::endl;

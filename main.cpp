@@ -18,7 +18,7 @@ int main()
     // First save font glyphs
     font = SaveFontGlyphs(inPath / "ui" / "font_glyphs.json", outPath / "ui" / "font_glyphs.bin");
     // Save languages that depend on the font
-    if (font) keys = SaveLanguages(inPath / "lang" / "lang.tsv", *font, outPath / "lang");
+    if (font) keys = SaveLanguages(inPath / "lang", *font, outPath / "lang");
     else std::cout << "Could not save languages as they require valid font" << std::endl;
 
     // Save the rest that doesn't depend on language keys

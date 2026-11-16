@@ -8,6 +8,7 @@
 #include <filesystem>
 
 #include "font_glyphs.h"
+#include "raw_assets/tsv.h"
 
 struct Utf8Result
 {
@@ -53,6 +54,7 @@ inline bool IsContinuation(const uint8_t b) { return (b & 0xC0) == 0x80; }
 [[nodiscard]] uint32_t Count(const uint8_t* str);
 [[nodiscard]] LangStringMetrics MeasureString(const uint8_t* strData, const FontGlyphs& glyphs);
 
+std::optional<Tsv> ReadTsvFolder(const std::filesystem::path& inPath);
 std::optional<LangKeys> SaveLanguages(const std::filesystem::path& inPath, const FontGlyphs& glyphs, const std::filesystem::path& outPath);
 bool WriteLang(const std::filesystem::path& path, const Lang& lang);
 
