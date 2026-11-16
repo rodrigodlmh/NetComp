@@ -60,6 +60,8 @@ add_executable(NetComp
         bin_packers/shader.cpp
         bin_packers/ui_sprites.cpp
         bin_packers/texture.cpp
+        bin_packers/block_def.cpp
+        bin_packers/biome_def.cpp
 )
 
 target_include_directories(NetComp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)

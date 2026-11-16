@@ -14,6 +14,7 @@ int main()
 
     std::optional<FontGlyphs> font;
     std::optional<LangKeys> keys;
+    std::optional<TextureKeys> blockArrayKeys;
     // First save font glyphs
     font = SaveFontGlyphs(inPath / "ui" / "font_glyphs.json", outPath / "ui" / "font_glyphs.bin");
     // Save languages that depend on the font
@@ -28,8 +29,10 @@ int main()
     SaveShader(compiler, inPath / "shaders", "opaque_chunk", outPath / "shaders");
     SaveShader(compiler, inPath / "shaders", "chunk", outPath / "shaders");
 
-    SaveTexture(inPath / "ui" / "font_atlas.png", outPath / "ui" / "font_atlas.png");
-    SaveTexture(inPath / "ui" / "ui_atlas.png", outPath / "ui" / "ui_atlas.png");
+    SaveTexture(inPath / "ui" / "font_atlas.png", outPath / "ui" / "font_atlas.bin", false);
+    SaveTexture(inPath / "ui" / "ui_atlas.png", outPath / "ui" / "ui_atlas.bin", true);
+    SaveTexture(inPath / "ui" / "missing_block.png", outPath / "ui" / "missing_block.bin", true);
+    blockArrayKeys = SaveTextureArray(inPath / "textures" / "blocks", outPath / "textures" / "block_textures.bin");
 
     // Save the rest that depends on language keys
 

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 #include <filesystem>
+#include <unordered_map>
 
 struct TextureHeader
 {
@@ -24,9 +25,11 @@ struct Texture
     std::vector<uint8_t> data;
 };
 
+using TextureKeys = std::unordered_map<std::string, uint32_t>;
+
 // inPath must be a path to a file
-void SaveTexture(const std::filesystem::path& inPath, const std::filesystem::path& outPath);
+void SaveTexture(const std::filesystem::path& inPath, const std::filesystem::path& outPath, bool rgba);
 // inPath must be a path to a folder with png files
-void SaveTextureArray(const std::filesystem::path& inPath, const std::filesystem::path& outPath);
+std::optional<TextureKeys> SaveTextureArray(const std::filesystem::path& inPath, const std::filesystem::path& outPath);
 
 #endif //NETCOMP_TEXTURE_H
